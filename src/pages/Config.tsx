@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   Settings, Bell, Mail, Shield, Database, Users,
   Key, Webhook, Save, Check, AlertTriangle,
-  ChevronRight, ToggleLeft, ToggleRight
+  ChevronRight, Plus, Trash2
 } from 'lucide-react';
 import { useWarningStore } from '../store/warningStore';
 
@@ -39,9 +39,8 @@ export default function Config() {
     // 通知配置
     enableEmail: true,
     enableSms: true,
-    enableApp: false,
-    emailRecipients: 'admin@example.com',
-    smsRecipients: '138****8888',
+    emailRecipients: ['admin@example.com', 'audit@example.com'],
+    smsRecipients: ['13800138000', '13900139000'],
     
     // 数据源
     autoSync: true,
@@ -65,6 +64,31 @@ export default function Config() {
 
   const handleChange = (key: string, value: any) => {
     setConfig(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleRecipientChange = (
+    key: 'emailRecipients' | 'smsRecipients',
+    index: number,
+    value: string
+  ) => {
+    setConfig((prev) => ({
+      ...prev,
+      [key]: prev[key].map((item, itemIndex) => (itemIndex === index ? value : item)),
+    }));
+  };
+
+  const handleAddRecipient = (key: 'emailRecipients' | 'smsRecipients') => {
+    setConfig((prev) => ({
+      ...prev,
+      [key]: [...prev[key], ''],
+    }));
+  };
+
+  const handleRemoveRecipient = (key: 'emailRecipients' | 'smsRecipients', index: number) => {
+    setConfig((prev) => ({
+      ...prev,
+      [key]: prev[key].length === 1 ? prev[key] : prev[key].filter((_, itemIndex) => itemIndex !== index),
+    }));
   };
 
   const Toggle = ({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) => (
@@ -146,15 +170,40 @@ export default function Config() {
               <Toggle checked={config.enableEmail} onChange={(v) => handleChange('enableEmail', v)} />
             </div>
             {config.enableEmail && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">收件人邮箱</label>
-                <input
-                  type="text"
-                  value={config.emailRecipients}
-                  onChange={(e) => handleChange('emailRecipients', e.target.value)}
-                  placeholder="多个邮箱用逗号分隔"
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-slate-700">收件邮箱</label>
+                  <button
+                    type="button"
+                    onClick={() => handleAddRecipient('emailRecipients')}
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700"
+                  >
+                    <Plus className="w-4 h-4" />
+                    新增邮箱
+                  </button>
+                </div>
+                {config.emailRecipients.map((email, index) => (
+                  <div key={`email-${index}`} className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => handleRecipientChange('emailRecipients', index, e.target.value)}
+                        placeholder="请输入通知邮箱"
+                        className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-4 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveRecipient('emailRecipients', index)}
+                      disabled={config.emailRecipients.length === 1}
+                      className="rounded-lg border border-slate-200 p-2 text-slate-400 transition-colors hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
 
@@ -166,25 +215,39 @@ export default function Config() {
               <Toggle checked={config.enableSms} onChange={(v) => handleChange('enableSms', v)} />
             </div>
             {config.enableSms && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">收件人手机</label>
-                <input
-                  type="text"
-                  value={config.smsRecipients}
-                  onChange={(e) => handleChange('smsRecipients', e.target.value)}
-                  placeholder="多个手机号用逗号分隔"
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-slate-700">接收手机号</label>
+                  <button
+                    type="button"
+                    onClick={() => handleAddRecipient('smsRecipients')}
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700"
+                  >
+                    <Plus className="w-4 h-4" />
+                    新增手机号
+                  </button>
+                </div>
+                {config.smsRecipients.map((phone, index) => (
+                  <div key={`sms-${index}`} className="flex items-center gap-2">
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => handleRecipientChange('smsRecipients', index, e.target.value)}
+                      placeholder="请输入接收手机号"
+                      className="flex-1 rounded-lg border border-slate-200 px-4 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveRecipient('smsRecipients', index)}
+                      disabled={config.smsRecipients.length === 1}
+                      className="rounded-lg border border-slate-200 p-2 text-slate-400 transition-colors hover:border-red-200 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
-
-            <div className="flex items-center justify-between py-3">
-              <div>
-                <p className="font-medium text-slate-800">APP推送</p>
-                <p className="text-sm text-slate-500">通过移动APP推送通知</p>
-              </div>
-              <Toggle checked={config.enableApp} onChange={(v) => handleChange('enableApp', v)} />
-            </div>
           </div>
         );
 
