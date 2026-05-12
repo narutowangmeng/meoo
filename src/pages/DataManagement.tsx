@@ -5,7 +5,7 @@ import {
   FileText, Settings, Activity, TrendingUp, Shield, Clock,
   ChevronRight, ChevronDown, Search, Filter, Download,
   Plus, Edit2, Trash2, Play, Pause, MoreVertical,
-  Layers, GitBranch, Zap, Box, Share2, Lock
+  Layers, GitBranch, Zap, Box, Share2, Lock, X
 } from 'lucide-react';
 
 // 数据源类型
@@ -49,10 +49,48 @@ const lineageData = {
   applications: ['预警分析', '报表统计', '大屏展示'],
 };
 
+const apiInterfaces = [
+  {
+    id: 'finance-query',
+    name: '财务数据查询',
+    method: 'GET',
+    callsToday: '12,456',
+    status: '正常',
+    endpoint: '/api/v1/finance/records',
+    auth: 'Bearer Token',
+    updatedAt: '2026-05-12 10:42:18',
+    avgResponse: '186ms',
+    description: '按企业、期间、科目等条件查询财务台账和汇总信息，用于驾驶舱和预警引擎拉取基础财务数据。',
+    params: [
+      { name: 'companyId', required: '是', desc: '企业唯一标识' },
+      { name: 'period', required: '是', desc: '查询期间，格式 YYYY-MM' },
+      { name: 'subjectCode', required: '否', desc: '科目编码，支持前缀过滤' },
+    ],
+  },
+  {
+    id: 'personnel-sync',
+    name: '人员信息同步',
+    method: 'POST',
+    callsToday: '3,234',
+    status: '正常',
+    endpoint: '/api/v1/hr/employees/sync',
+    auth: 'AppKey + 签名',
+    updatedAt: '2026-05-12 09:58:03',
+    avgResponse: '423ms',
+    description: '接收人事系统推送的员工主数据变更，写入统一监管数据仓并触发编制、任职和薪酬相关校验。',
+    params: [
+      { name: 'syncBatchNo', required: '是', desc: '同步批次号' },
+      { name: 'timestamp', required: '是', desc: '发起同步时间戳' },
+      { name: 'employees', required: '是', desc: '员工数据数组，支持批量 upsert' },
+    ],
+  },
+];
+
 export default function DataManagement() {
   const [activeTab, setActiveTab] = useState<'sources' | 'quality' | 'lineage' | 'integration'>('sources');
   const [selectedSource, setSelectedSource] = useState<any>(null);
   const [expandedSource, setExpandedSource] = useState<number | null>(null);
+  const [selectedApi, setSelectedApi] = useState<(typeof apiInterfaces)[number] | null>(null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -562,32 +600,35 @@ export default function DataManagement() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
-                    <tr className="hover:bg-slate-50">
-                      <td className="px-6 py-4 text-sm text-slate-800">财务数据查询</td>
-                      <td className="px-6 py-4">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">GET</span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-600">12,456</td>
-                      <td className="px-6 py-4">
-                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">正常</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button className="text-blue-600 hover:text-blue-800 text-sm">查看</button>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-slate-50">
-                      <td className="px-6 py-4 text-sm text-slate-800">人员信息同步</td>
-                      <td className="px-6 py-4">
-                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">POST</span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-600">3,234</td>
-                      <td className="px-6 py-4">
-                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">正常</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button className="text-blue-600 hover:text-blue-800 text-sm">查看</button>
-                      </td>
-                    </tr>
+                    {apiInterfaces.map((api) => (
+                      <tr key={api.id} className="hover:bg-slate-50">
+                        <td className="px-6 py-4 text-sm text-slate-800">{api.name}</td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`px-2 py-1 text-xs rounded ${
+                              api.method === 'GET'
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-green-100 text-green-700'
+                            }`}
+                          >
+                            {api.method}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-600">{api.callsToday}</td>
+                        <td className="px-6 py-4">
+                          <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">{api.status}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedApi(api)}
+                            className="text-blue-600 hover:text-blue-800 text-sm"
+                          >
+                            查看
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -595,6 +636,100 @@ export default function DataManagement() {
           )}
         </div>
       </div>
+
+      <AnimatePresence>
+        {selectedApi && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm"
+              onClick={() => setSelectedApi(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 40 }}
+              transition={{ duration: 0.2 }}
+              className="fixed right-0 top-0 z-50 h-full w-full max-w-2xl overflow-y-auto border-l border-slate-200 bg-white shadow-2xl"
+            >
+              <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-xl font-semibold text-slate-800">{selectedApi.name}</h3>
+                    <span
+                      className={`rounded px-2 py-1 text-xs font-medium ${
+                        selectedApi.method === 'GET'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-green-100 text-green-700'
+                      }`}
+                    >
+                      {selectedApi.method}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-slate-500">{selectedApi.description}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedApi(null)}
+                  className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-6 px-6 py-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs text-slate-500">接口地址</p>
+                    <p className="mt-2 font-mono text-sm text-slate-800">{selectedApi.endpoint}</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs text-slate-500">鉴权方式</p>
+                    <p className="mt-2 text-sm font-medium text-slate-800">{selectedApi.auth}</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs text-slate-500">今日调用次数</p>
+                    <p className="mt-2 text-2xl font-semibold text-slate-800">{selectedApi.callsToday}</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs text-slate-500">平均响应时间</p>
+                    <p className="mt-2 text-2xl font-semibold text-slate-800">{selectedApi.avgResponse}</p>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-200">
+                  <div className="border-b border-slate-200 px-4 py-3">
+                    <h4 className="font-medium text-slate-800">请求参数</h4>
+                  </div>
+                  <div className="divide-y divide-slate-200">
+                    {selectedApi.params.map((param) => (
+                      <div key={param.name} className="grid grid-cols-[140px_80px_1fr] gap-4 px-4 py-3 text-sm">
+                        <span className="font-mono text-slate-700">{param.name}</span>
+                        <span className={param.required === '是' ? 'text-red-600' : 'text-slate-400'}>
+                          {param.required}
+                        </span>
+                        <span className="text-slate-600">{param.desc}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium text-slate-800">最近一次更新</h4>
+                      <p className="mt-1 text-sm text-slate-500">用于确认接口最近一次成功响应时间</p>
+                    </div>
+                    <span className="text-sm font-medium text-slate-700">{selectedApi.updatedAt}</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
