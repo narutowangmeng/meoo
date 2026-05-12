@@ -22,6 +22,13 @@ const trendData = [
   { month: '5月', red: 5, orange: 10, yellow: 14, blue: 7 }
 ];
 
+const trendSeries = [
+  { key: 'red', label: '红色预警', stroke: '#ef4444', fill: 'url(#colorRed)' },
+  { key: 'orange', label: '橙色预警', stroke: '#f97316', fill: 'url(#colorOrange)' },
+  { key: 'yellow', label: '黄色预警', stroke: '#eab308', fill: '#fef08a' },
+  { key: 'blue', label: '蓝色预警', stroke: '#3b82f6', fill: '#dbeafe' },
+] as const;
+
 // 9个监管模块配置
 const modules = [
   { name: '财务风险', path: '/financial', icon: TrendingUp, color: 'from-red-500 to-orange-500', bgColor: 'bg-red-50', iconColor: 'text-red-600' },
@@ -62,6 +69,11 @@ export default function Dashboard() {
   const getModuleWarningCount = (moduleName: string) => {
     return records.filter(r => r.category === moduleName && r.status !== 'resolved').length;
   };
+
+  const trendTotals = trendData.map((item) => item.red + item.orange + item.yellow + item.blue);
+  const latestTrendTotal = trendTotals[trendTotals.length - 1];
+  const previousTrendTotal = trendTotals[trendTotals.length - 2] ?? latestTrendTotal;
+  const trendDelta = latestTrendTotal - previousTrendTotal;
 
   const getLevelIcon = (level: WarningLevel) => {
     const config = levelConfig[level];
@@ -265,18 +277,58 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
-          className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm"
+          className="self-start bg-white rounded-xl border border-slate-200 shadow-sm"
         >
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-slate-800">预警趋势</h3>
-            <div className="flex items-center gap-2 text-sm text-slate-500">
-              <Activity className="w-4 h-4" />
-              <span>近5个月</span>
+          <div className="border-b border-slate-100 px-6 py-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-800">预警趋势</h3>
+                <p className="mt-1 text-sm text-slate-500">近 5 个月预警波动与层级分布</p>
+              </div>
+              <div className="flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1.5 text-sm text-slate-600">
+                <Activity className="w-4 h-4" />
+                <span>近5个月</span>
+              </div>
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <div className="rounded-xl bg-slate-50 px-4 py-3">
+                <p className="text-xs text-slate-500">本月预警总数</p>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <span className="text-2xl font-semibold text-slate-800">{latestTrendTotal}</span>
+                  <span className={`text-xs font-medium ${trendDelta >= 0 ? 'text-rose-500' : 'text-emerald-600'}`}>
+                    {trendDelta >= 0 ? '+' : ''}{trendDelta} 较上月
+                  </span>
+                </div>
+              </div>
+              <div className="rounded-xl bg-blue-50 px-4 py-3">
+                <p className="text-xs text-slate-500">高风险占比</p>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <span className="text-2xl font-semibold text-slate-800">
+                    {Math.round(((trendData[trendData.length - 1].red + trendData[trendData.length - 1].orange) / latestTrendTotal) * 100)}%
+                  </span>
+                  <span className="text-xs font-medium text-blue-600">红橙预警</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {trendSeries.map((series) => (
+                <span
+                  key={series.key}
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600"
+                >
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: series.stroke }} />
+                  {series.label}
+                </span>
+              ))}
             </div>
           </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData}>
+
+          <div className="px-4 py-4">
+            <div className="h-[280px] rounded-xl bg-gradient-to-b from-slate-50 to-white px-2 pt-3">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={trendData}>
                 <defs>
                   <linearGradient id="colorRed" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
@@ -287,16 +339,45 @@ export default function Dashboard() {
                     <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="month" stroke="#64748b" fontSize={12} />
-                <YAxis stroke="#64748b" fontSize={12} />
-                <Tooltip />
-                <Area type="monotone" dataKey="red" stackId="1" stroke="#ef4444" fill="url(#colorRed)" name="红色预警" />
-                <Area type="monotone" dataKey="orange" stackId="1" stroke="#f97316" fill="url(#colorOrange)" name="橙色预警" />
-                <Area type="monotone" dataKey="yellow" stackId="1" stroke="#eab308" fill="#fef08a" name="黄色预警" />
-                <Area type="monotone" dataKey="blue" stackId="1" stroke="#3b82f6" fill="#dbeafe" name="蓝色预警" />
-              </AreaChart>
-            </ResponsiveContainer>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#dbe4f0" vertical={false} />
+                  <XAxis
+                    dataKey="month"
+                    stroke="#64748b"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="#64748b"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    width={28}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: '12px',
+                      border: '1px solid #e2e8f0',
+                      boxShadow: '0 12px 30px rgba(15, 23, 42, 0.12)',
+                      padding: '10px 12px'
+                    }}
+                    labelStyle={{ color: '#0f172a', fontWeight: 600, marginBottom: 6 }}
+                  />
+                  {trendSeries.map((series) => (
+                    <Area
+                      key={series.key}
+                      type="monotone"
+                      dataKey={series.key}
+                      stackId="1"
+                      stroke={series.stroke}
+                      fill={series.fill}
+                      strokeWidth={1.8}
+                      name={series.label}
+                    />
+                  ))}
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </motion.div>
       </div>
