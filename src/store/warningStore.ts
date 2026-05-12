@@ -1595,6 +1595,70 @@ const initialRecords: WarningRecord[] = [
   { id: 'w5', ruleId: 'm1', ruleName: '大额资金支出', category: '资金司库', level: 'red', triggerTime: '2026-05-12 11:00:00', status: 'pending', description: 'XX集团单笔支付500万元' }
 ];
 
+const validWarningLevels: WarningLevel[] = ['red', 'orange', 'yellow', 'blue'];
+const initialRuleById = new Map(initialRules.map(rule => [rule.id, rule]));
+
+const sanitizeRules = (rules: unknown): WarningRule[] => {
+  if (!Array.isArray(rules) || rules.length === 0) {
+    return initialRules;
+  }
+
+  return rules.reduce<WarningRule[]>((result, rule, index) => {
+      if (typeof rule !== 'object' || rule === null) {
+        return result;
+      }
+
+      const candidate = rule as Partial<WarningRule>;
+      const fallback = initialRuleById.get(candidate.id ?? '') ?? initialRules[index % initialRules.length];
+      const createdAt =
+        typeof candidate.createdAt === 'string' && candidate.createdAt.length > 0
+          ? candidate.createdAt
+          : fallback.createdAt;
+
+      const normalizedRule: WarningRule = {
+        ...fallback,
+        ...candidate,
+        id: typeof candidate.id === 'string' && candidate.id.length > 0 ? candidate.id : `restored_rule_${index}`,
+        category: typeof candidate.category === 'string' && candidate.category.length > 0 ? candidate.category : fallback.category,
+        name: typeof candidate.name === 'string' && candidate.name.length > 0 ? candidate.name : fallback.name,
+        query:
+          typeof candidate.query === 'object' && candidate.query !== null && 'rules' in candidate.query
+            ? candidate.query
+            : fallback.query,
+        condition:
+          typeof candidate.condition === 'string' && candidate.condition.length > 0
+            ? candidate.condition
+            : fallback.condition,
+        level: validWarningLevels.includes(candidate.level as WarningLevel) ? (candidate.level as WarningLevel) : fallback.level,
+        frequency:
+          typeof candidate.frequency === 'string' && candidate.frequency.length > 0
+            ? candidate.frequency
+            : fallback.frequency,
+        action: typeof candidate.action === 'string' && candidate.action.length > 0 ? candidate.action : fallback.action,
+        source: typeof candidate.source === 'string' && candidate.source.length > 0 ? candidate.source : fallback.source,
+        factId: typeof candidate.factId === 'string' && candidate.factId.length > 0 ? candidate.factId : fallback.factId,
+        policyBasis:
+          typeof candidate.policyBasis === 'string' && candidate.policyBasis.length > 0
+            ? candidate.policyBasis
+            : fallback.policyBasis,
+        policyClause:
+          typeof candidate.policyClause === 'string' && candidate.policyClause.length > 0
+            ? candidate.policyClause
+            : fallback.policyClause,
+        description: typeof candidate.description === 'string' ? candidate.description : fallback.description,
+        enabled: typeof candidate.enabled === 'boolean' ? candidate.enabled : fallback.enabled,
+        createdAt,
+        updatedAt:
+          typeof candidate.updatedAt === 'string' && candidate.updatedAt.length > 0
+            ? candidate.updatedAt
+            : createdAt,
+      };
+
+      result.push(normalizedRule);
+      return result;
+    }, []);
+};
+
 interface WarningState {
   rules: WarningRule[];
   records: WarningRecord[];
@@ -1766,7 +1830,25 @@ export const useWarningStore = create<WarningState>()(
     }),
     {
       name: 'warning-rules-storage',
-      partialize: (state) => ({ rules: state.rules })
+      version: 1,
+      partialize: (state) => ({ rules: state.rules }),
+      merge: (persistedState, currentState) => {
+        const persisted =
+          typeof persistedState === 'object' && persistedState !== null && 'state' in persistedState
+            ? (persistedState as { state?: unknown }).state
+            : persistedState;
+        const state =
+          typeof persisted === 'object' && persisted !== null ? (persisted as Partial<WarningState>) : {};
+
+        return {
+          ...currentState,
+          ...state,
+          rules: sanitizeRules(state.rules),
+          records: initialRecords,
+          loading: false,
+          error: null,
+        };
+      }
     }
   )
 );

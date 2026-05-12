@@ -266,6 +266,23 @@ button:disabled {
   }
 }
 
+/* 修复侧边栏在大屏幕下显示 */
+@media (min-width: 1024px) {
+  aside.lg\:translate-x-0 {
+    transform: translateX(0) !important;
+  }
+  aside.lg\:static {
+    position: static !important;
+  }
+  aside.lg\:h-screen {
+    height: 100vh !important;
+  }
+  /* 主内容区左边距 */
+  .lg\:ml-\[280px\] {
+    margin-left: 280px !important;
+  }
+}
+
 /* 打印样式 */
 @media print {
   .no-print {

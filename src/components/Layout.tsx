@@ -15,6 +15,7 @@ import {
   User,
   Database
 } from 'lucide-react';
+import RouteErrorBoundary from './RouteErrorBoundary';
 
 const navigation = [
   { name: '监控驾驶舱', href: '/', icon: LayoutDashboard },
@@ -52,7 +53,7 @@ export default function Layout() {
           width: 280
         }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className={`fixed top-0 left-0 z-50 h-full bg-white border-r border-slate-200 lg:translate-x-0 lg:static lg:h-screen`}
+        className={`fixed top-0 left-0 z-50 h-full bg-white border-r border-slate-200 lg:translate-x-0 lg:h-screen`}
       >
         {/* Logo区域 */}
         <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-100">
@@ -90,12 +91,11 @@ export default function Layout() {
               >
                 <item.icon className={`w-5 h-5 ${isItemActive ? 'text-blue-600' : 'text-slate-400'}`} />
                 <span>{item.name}</span>
-                {isItemActive && (
-                  <motion.div
-                    layoutId="activeIndicator"
-                    className="ml-auto w-1.5 h-1.5 bg-blue-600 rounded-full"
-                  />
-                )}
+                <span
+                  className={`ml-auto h-1.5 w-1.5 rounded-full transition-opacity ${
+                    isItemActive ? 'bg-blue-600 opacity-100' : 'opacity-0'
+                  }`}
+                />
               </NavLink>
             );
           })}
@@ -116,7 +116,7 @@ export default function Layout() {
       </motion.aside>
 
       {/* 主内容区 */}
-      <div className="lg:ml-0 min-h-screen flex flex-col">
+      <div className="lg:ml-[280px] min-h-screen flex flex-col">
         {/* 顶部导航栏 */}
         <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200">
           <div className="flex items-center justify-between px-4 lg:px-8 py-4">
@@ -172,7 +172,9 @@ export default function Layout() {
             transition={{ duration: 0.3 }}
             className="max-w-7xl mx-auto"
           >
-            <Outlet />
+            <RouteErrorBoundary>
+              <Outlet />
+            </RouteErrorBoundary>
           </motion.div>
         </main>
       </div>

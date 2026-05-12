@@ -4,6 +4,11 @@ module.exports = {
     './index.html'
   ],
   darkMode: 'class',
+  safelist: [
+    'lg:translate-x-0',
+    'lg:static',
+    'lg:h-screen',
+  ],
   theme: {
     extend: {
       colors: {

@@ -20,13 +20,18 @@ import Config from './pages/Config';
 import DataManagement from './pages/DataManagement';
 
 function App() {
-  // 直接进入系统，不需要登录
+  const { isAuthenticated } = useAuthStore();
+
   return (
     <HashRouter>
       <Routes>
         <Route
+          path="/login"
+          element={isAuthenticated ? <Navigate to="/" replace /> : <Login />}
+        />
+        <Route
           path="/"
-          element={<Layout />}
+          element={isAuthenticated ? <Layout /> : <Navigate to="/login" replace />}
         >
           <Route index element={<Dashboard />} />
           <Route path="financial" element={<FinancialRisk />} />
