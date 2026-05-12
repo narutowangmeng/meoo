@@ -37,7 +37,7 @@ export default function Login() {
           >
             <Shield className="w-10 h-10 text-white" />
           </motion.div>
-          <h1 className="text-2xl font-bold text-white mb-2">市县国资监管一张网</h1>
+          <h1 className="text-2xl font-bold text-white mb-2">XX市XX县国资监管一张网</h1>
           <p className="text-white/60">AI预警管理系统</p>
         </div>
 
